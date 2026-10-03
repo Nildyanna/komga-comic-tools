@@ -1,0 +1,16 @@
+{
+  "library_root": "/path/to/your/comics",
+  "comictagger": "comictagger",
+  "folders": {
+    "Example Series": {
+      "series": "Example Series",
+      "start_year": 1990,
+      "expected": ["example series"]
+    },
+    "Example Series (2010)": {
+      "series": "Example Series",
+      "start_year": 2010,
+      "expected": ["example series"]
+    }
+  }
+}

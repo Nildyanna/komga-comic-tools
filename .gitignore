@@ -1,0 +1,12 @@
+# never commit local data, keys or logs
+*.log
+*.jsonl
+*.sqlite*
+*.cbz
+*.cbr
+*.cbl
+*.csv
+config.json
+.env
+*.key
+__pycache__/
