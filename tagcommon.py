@@ -31,6 +31,16 @@ FIELDS = r"<(Series|Number|Year|Month|Volume|Count|Title)>([^<]*)<"
 
 
 def is_cbz(path):
+    """True for ZIP containers. Sniffs the header, because plenty of .cbz files are really RARs (and vice versa)."""
+    try:
+        with open(str(path), "rb") as f:
+            head = f.read(4)
+        if head[:2] == b"PK":
+            return True
+        if head[:4] == b"Rar!":
+            return False
+    except OSError:
+        pass
     return str(path).lower().endswith(".cbz")
 
 
