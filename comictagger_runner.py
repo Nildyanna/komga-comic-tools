@@ -13,12 +13,16 @@ Config (JSON, see config.example.json):
                                  "expected": ["<accepted series names, lower-case>"]} }
 }
 
+Optional "collected_folders": ["<folder under library_root>", ...]. With --collected the runner also tags the trade paperbacks and
+omnibuses in those folders (see tag_collected.py: it matches the Comic Vine volume from the file name and tags by issue id), which
+the numbered-issue pass cannot do.
+
 Optional "komga" section: {"base_url": "http://localhost:25600", "library_ids": ["<Komga library id>", ...]}. With --title-fix
 preview|apply (and KOMGA_API_KEY set) the runner finishes by asking Komga to rescan those libraries, waiting --scan-wait seconds, and
 running komga_title_fix.py on them, so collected editions get "<Series> Vol. N" titles right after they are tagged.
 
 Usage:  python comictagger_runner.py config.json --state-dir ./state [--max 150] [--pause 25] [--dry-run]
-                                      [--title-fix off|preview|apply] [--scan-wait 90]
+                                      [--collected] [--title-fix off|preview|apply] [--scan-wait 90]
 """
 import argparse
 import json
@@ -30,6 +34,7 @@ import time
 from pathlib import Path
 
 import komga_title_fix
+import tag_collected
 import tagcommon
 
 NUMBER = re.compile(r"#(-?\d+(?:\.\d+)?)\.cb[rz]$", re.I)
@@ -54,6 +59,7 @@ def main():
     ap.add_argument("--max", type=int, default=0, help="stop after this many files (run in chunks)")
     ap.add_argument("--pause", type=int, default=25, help="seconds between files (Comic Vine rate limit)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--collected", action="store_true", help="also tag the collected editions in the config's collected_folders")
     ap.add_argument("--title-fix", choices=["off", "preview", "apply"], default="off",
                     help="after tagging: rescan the config's Komga libraries and retitle generic collected editions")
     ap.add_argument("--scan-wait", type=int, default=90, help="seconds to let Komga read the tagged files before the title fix")
@@ -92,6 +98,8 @@ def main():
         todo = todo[:args.max]
     print(f"{len(files)} eligible, {len(todo)} to tag this run")
     if args.dry_run:
+        if args.collected:
+            tag_collected_folders(cfg, args, apply=False)
         return 0
 
     pause, ok, bad = args.pause, 0, 0
@@ -135,9 +143,21 @@ def main():
                 pause = 25  # back off to the safe pause
             time.sleep(pause)
     print(f"tagged {ok}, not tagged {bad}; log: {log_path}")
+    if args.collected:
+        ok += tag_collected_folders(cfg, args, apply=True, exe=exe)
     if ok and args.title_fix != "off":
         title_fix(cfg.get("komga") or {}, args)
     return 0
+
+
+def tag_collected_folders(cfg, args, apply, exe="comictagger", say=print):
+    """Tag the collected editions in the config's collected_folders; returns how many files were tagged."""
+    key = komga_title_fix.comicvine_key()
+    dirs = [Path(cfg["library_root"]) / f for f in cfg.get("collected_folders") or []]
+    if not key or not dirs:
+        say("collected editions skipped: needs a Comic Vine key and collected_folders in the config")
+        return 0
+    return tag_collected.run(dirs, key, exe, apply=apply, max_files=args.max or 20, log=str(args.state_dir / "tag_collected_log.jsonl"), say=say)
 
 
 def title_fix(komga_cfg, args, say=print, sleep=time.sleep):

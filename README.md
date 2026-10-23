@@ -15,6 +15,7 @@ These tools do not download, host or link to any comics. Use them only with file
 | You tagged a lot of files and want to know which ones really got the right Comic Vine series. | `verify_tags.py` |
 | You added hundreds of issues and want them in your existing read list, in order, with your progress and the old order untouched. | `komga_readlist_merge.py` |
 | Comic Vine names trade paperbacks and omnibuses just "Volume 3" or "TPB", so a list shows "Volume Three" with no series. | `komga_title_fix.py` |
+| Trade paperbacks and omnibuses have no issue number, so ComicTagger cannot match them by itself. | `tag_collected.py` |
 
 ## Requirements
 Python 3.9+, no third-party packages. ComicTagger on PATH (or set `comictagger` in the config) for the tagging tools.
@@ -29,6 +30,8 @@ python inject_comicinfo.py /path/to/library
 
 # 2. optional: full Comic Vine tags, in chunks (copy config.example.json to config.json and edit it)
 python comictagger_runner.py config.json --state-dir ./state --max 150
+# add --collected to also tag the trade paperbacks/omnibuses in the config's "collected_folders" (name -> Comic Vine volume -> issue id)
+# (or run it on its own: python tag_collected.py DIR [--apply]; preview first)
 # add --title-fix apply (or preview) to also rescan the config's Komga libraries when the run finishes and retitle
 # collected editions (needs KOMGA_API_KEY and a "komga" section in the config; see config.example.json)
 python verify_tags.py config.json

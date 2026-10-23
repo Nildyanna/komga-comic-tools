@@ -22,5 +22,8 @@
     "library_ids": [
       "<Komga library id to rescan for --title-fix>"
     ]
-  }
+  },
+  "collected_folders": [
+    "Example Series Collected Editions"
+  ]
 }
