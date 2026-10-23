@@ -14,6 +14,7 @@ These tools do not download, host or link to any comics. Use them only with file
 | ComicTagger matches "Spider-Man #7" against any of a dozen volumes, rejects issues more than ~1 year from the year hint, and prints "Files tagged" even when it aborts a low-confidence save. | `comictagger_runner.py` |
 | You tagged a lot of files and want to know which ones really got the right Comic Vine series. | `verify_tags.py` |
 | You added hundreds of issues and want them in your existing read list, in order, with your progress and the old order untouched. | `komga_readlist_merge.py` |
+| Comic Vine names trade paperbacks and omnibuses just "Volume 3" or "TPB", so a list shows "Volume Three" with no series. | `komga_title_fix.py` |
 
 ## Requirements
 Python 3.9+, no third-party packages. ComicTagger on PATH (or set `comictagger` in the config) for the tagging tools.
@@ -30,11 +31,20 @@ python inject_comicinfo.py /path/to/library
 python comictagger_runner.py config.json --state-dir ./state --max 150
 python verify_tags.py config.json
 
-# 3. merge new books into an existing Komga read list (preview first)
+# 3. give collected editions a title that names the series ("Volume 3" -> "Thunderbolts Classic Vol. 3"); preview first
+export KOMGA_API_KEY=...        # and COMICVINE_KEY=... (or --comictagger-settings path\to\settings.json)
+python komga_title_fix.py --preview titles.csv
+python komga_title_fix.py --apply
+
+# 4. merge new books into an existing Komga read list (preview first)
 export KOMGA_API_KEY=...        # Komga > My Account > API Keys; never stored by these tools
 python komga_readlist_merge.py --library-id LIB_ID --readlist-id LIST_ID
 python komga_readlist_merge.py --library-id LIB_ID --readlist-id LIST_ID --apply --cbl merged.cbl
 ```
+
+The title fix only touches books whose title is exactly "Volume N" / "Vol. N" / "TPB" / "Omnibus" and that carry a Comic Vine link; single
+issues with real titles (including "Part Three" or "Book Four") are left alone. Titles it writes are locked in Komga. Run it after a
+Komga scan of newly tagged books. Tests: `python test_title_fix.py`.
 
 The read-list merge keeps every existing entry (including ones from other libraries) in the same relative order, keeps the list's id and name, and places
 each new book after the last entry with an earlier-or-equal cover month (interpolated from books of the same folder
