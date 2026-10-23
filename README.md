@@ -29,6 +29,8 @@ python inject_comicinfo.py /path/to/library
 
 # 2. optional: full Comic Vine tags, in chunks (copy config.example.json to config.json and edit it)
 python comictagger_runner.py config.json --state-dir ./state --max 150
+# add --title-fix apply (or preview) to also rescan the config's Komga libraries when the run finishes and retitle
+# collected editions (needs KOMGA_API_KEY and a "komga" section in the config; see config.example.json)
 python verify_tags.py config.json
 
 # 3. give collected editions a title that names the series ("Volume 3" -> "Thunderbolts Classic Vol. 3"); preview first
@@ -43,8 +45,8 @@ python komga_readlist_merge.py --library-id LIB_ID --readlist-id LIST_ID --apply
 ```
 
 The title fix only touches books whose title is exactly "Volume N" / "Vol. N" / "TPB" / "Omnibus" and that carry a Comic Vine link; single
-issues with real titles (including "Part Three" or "Book Four") are left alone. Titles it writes are locked in Komga. Run it after a
-Komga scan of newly tagged books. Tests: `python test_title_fix.py`.
+issues with real titles (including "Part Three" or "Book Four") are left alone. Titles it writes are locked in Komga. The tagging runner can run it for you
+(`--title-fix`); otherwise run it after a Komga scan of newly tagged books. Tests: `python test_title_fix.py`.
 
 The read-list merge keeps every existing entry (including ones from other libraries) in the same relative order, keeps the list's id and name, and places
 each new book after the last entry with an earlier-or-equal cover month (interpolated from books of the same folder

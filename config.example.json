@@ -5,12 +5,22 @@
     "Example Series": {
       "series": "Example Series",
       "start_year": 1990,
-      "expected": ["example series"]
+      "expected": [
+        "example series"
+      ]
     },
     "Example Series (2010)": {
       "series": "Example Series",
       "start_year": 2010,
-      "expected": ["example series"]
+      "expected": [
+        "example series"
+      ]
     }
+  },
+  "komga": {
+    "base_url": "http://localhost:25600",
+    "library_ids": [
+      "<Komga library id to rescan for --title-fix>"
+    ]
   }
 }

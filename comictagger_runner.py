@@ -13,16 +13,23 @@ Config (JSON, see config.example.json):
                                  "expected": ["<accepted series names, lower-case>"]} }
 }
 
+Optional "komga" section: {"base_url": "http://localhost:25600", "library_ids": ["<Komga library id>", ...]}. With --title-fix
+preview|apply (and KOMGA_API_KEY set) the runner finishes by asking Komga to rescan those libraries, waiting --scan-wait seconds, and
+running komga_title_fix.py on them, so collected editions get "<Series> Vol. N" titles right after they are tagged.
+
 Usage:  python comictagger_runner.py config.json --state-dir ./state [--max 150] [--pause 25] [--dry-run]
+                                      [--title-fix off|preview|apply] [--scan-wait 90]
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+import komga_title_fix
 import tagcommon
 
 NUMBER = re.compile(r"#(-?\d+(?:\.\d+)?)\.cb[rz]$", re.I)
@@ -47,6 +54,9 @@ def main():
     ap.add_argument("--max", type=int, default=0, help="stop after this many files (run in chunks)")
     ap.add_argument("--pause", type=int, default=25, help="seconds between files (Comic Vine rate limit)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--title-fix", choices=["off", "preview", "apply"], default="off",
+                    help="after tagging: rescan the config's Komga libraries and retitle generic collected editions")
+    ap.add_argument("--scan-wait", type=int, default=90, help="seconds to let Komga read the tagged files before the title fix")
     args = ap.parse_args()
 
     cfg = json.loads(args.config.read_text(encoding="utf-8"))
@@ -125,7 +135,25 @@ def main():
                 pause = 25  # back off to the safe pause
             time.sleep(pause)
     print(f"tagged {ok}, not tagged {bad}; log: {log_path}")
+    if ok and args.title_fix != "off":
+        title_fix(cfg.get("komga") or {}, args)
     return 0
+
+
+def title_fix(komga_cfg, args, say=print, sleep=time.sleep):
+    """Rescan the Komga libraries, give Komga time to read the new tags, then fix generic collected-edition titles."""
+    key, cv_key = os.environ.get("KOMGA_API_KEY"), komga_title_fix.comicvine_key()
+    libs = komga_cfg.get("library_ids") or []
+    if not key or not cv_key or not libs:
+        say("title fix skipped: needs KOMGA_API_KEY, a Comic Vine key and komga.library_ids in the config")
+        return None
+    komga = komga_title_fix.Komga(komga_cfg.get("base_url", "http://localhost:25600"), key)
+    for lib in libs:
+        komga.scan(lib)
+    say(f"asked Komga to rescan {len(libs)} librar{'y' if len(libs) == 1 else 'ies'}; waiting {args.scan_wait}s")
+    sleep(args.scan_wait)
+    return komga_title_fix.fix_titles(komga, cv_key, libs, apply=args.title_fix == "apply",
+                                      preview=str(args.state_dir / "title_fix_preview.csv"), say=say)
 
 
 if __name__ == "__main__":
