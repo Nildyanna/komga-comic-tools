@@ -33,11 +33,21 @@ YEAR_WINDOW = 3          # a collection's Comic Vine start year can be a year or
 
 def norm(text):
     text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower().replace("&", " and ")
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
+    words = re.sub(r"[^a-z0-9]+", " ", text).split()
+    return " ".join(words[1:] if words[:1] == ["the"] and len(words) > 1 else words)
 
 
-def parse_name(filename):
-    """File name -> {names: [candidate volume names, best first], volume: int | None, year: int | None}."""
+def parse_name(filename, aliases=None):
+    """File name -> {names: [candidate volume names, best first], volume: int | None, year: int | None}.
+
+    aliases maps a normalised file title to the Comic Vine volume name it really is ('incredible hulk masterworks' -> 'Marvel Masterworks: The Incredible Hulk')."""
+    parsed = _parse_name(filename)
+    alias = {norm(k): v for k, v in (aliases or {}).items()}
+    extra = [alias[norm(n)] for n in parsed["names"] if norm(n) in alias]
+    return {**parsed, "names": extra + parsed["names"]}
+
+
+def _parse_name(filename):
     stem = Path(filename).stem
     year = YEAR.search(stem)
     year = int(year.group(1)) if year else None
@@ -59,6 +69,8 @@ def choose_volume(parsed, candidates):
         exact = [c for c in candidates if norm(c["name"]) == norm(name)]
         if not exact:
             continue
+        if len(exact) == 1:                       # the only volume with that name: reprints come out years later, so the year does not matter
+            return exact[0], None
         if parsed["year"]:
             near = [c for c in exact if c.get("start_year") and abs(int(c["start_year"]) - parsed["year"]) <= YEAR_WINDOW]
             if len(near) == 1:
@@ -109,9 +121,9 @@ def already_tagged(path):
         return False
 
 
-def match(cv_key, path, pause=1.5, sleep=time.sleep):
+def match(cv_key, path, pause=1.5, sleep=time.sleep, aliases=None):
     """-> dict(file, status 'match'|'skip', plus volume/issue/why)."""
-    parsed = parse_name(path.name)
+    parsed = parse_name(path.name, aliases)
     out = {"file": str(path), "parsed": parsed}
     if not parsed["names"]:
         return {**out, "status": "skip", "why": "could not read a title from the file name"}
@@ -143,7 +155,7 @@ def tag(exe, path, issue_id, timeout=300):
     return "Save complete" in out and already_tagged(path)
 
 
-def run(dirs, cv_key, exe="comictagger", apply=False, max_files=20, pause=1.5, log=None, say=print, sleep=time.sleep):
+def run(dirs, cv_key, exe="comictagger", apply=False, max_files=20, pause=1.5, log=None, say=print, sleep=time.sleep, aliases=None):
     """Returns the number of files tagged (always 0 for a preview)."""
     todo = [p for p in find_files(dirs) if not already_tagged(p)]
     say(f"{len(todo)} file(s) without Comic Vine tags in {len(list(dirs))} folder(s)")
@@ -153,7 +165,7 @@ def run(dirs, cv_key, exe="comictagger", apply=False, max_files=20, pause=1.5, l
             say(f"  stopped after {max_files}; run again for the rest")
             break
         try:
-            r = match(cv_key, path, pause, sleep)
+            r = match(cv_key, path, pause, sleep, aliases)
         except Exception as e:                                                     # noqa: BLE001
             r = {"file": str(path), "status": "skip", "why": f"Comic Vine lookup failed: {e}"}
         if r["status"] == "match":

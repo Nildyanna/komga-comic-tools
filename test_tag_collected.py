@@ -43,6 +43,17 @@ class ChooseTests(unittest.TestCase):
         got, _ = tc.choose_volume({"names": ["Thunderbolts"], "volume": 1, "year": 2007}, [TB97, TB06])
         self.assertEqual(got, TB06)
 
+    def test_only_volume_with_that_name_is_accepted_whatever_the_year(self):
+        got, why = tc.choose_volume({"names": ["Marvel Masterworks The Incredible Hulk"], "volume": 1, "year": 2009},
+                                    [{"id": 35210, "name": "Marvel Masterworks: The Incredible Hulk", "start_year": "2003"}])
+        self.assertEqual(got["id"], 35210, why)
+
+    def test_leading_the_is_ignored_and_aliases_apply(self):
+        self.assertEqual(tc.norm("The Immortal Hulk Omnibus"), tc.norm("Immortal Hulk Omnibus"))
+        p = tc.parse_name("Incredible Hulk Masterworks v15.cbz", {"Incredible Hulk Masterworks": "Marvel Masterworks: The Incredible Hulk"})
+        self.assertEqual(p["names"][0], "Marvel Masterworks: The Incredible Hulk")
+        self.assertEqual(p["volume"], 15)
+
     def test_ambiguous_or_missing_is_left_alone(self):
         self.assertIsNone(tc.choose_volume({"names": ["Thunderbolts"], "volume": None, "year": None}, [TB97, TB06])[0])      # no year
         self.assertIsNone(tc.choose_volume({"names": ["Thunderbolts"], "volume": None, "year": 1980}, [TB97, TB06])[0])      # too far

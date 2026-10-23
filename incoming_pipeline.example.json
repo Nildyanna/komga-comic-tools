@@ -1,0 +1,83 @@
+{
+  "incoming": "G:\\Comics\\Incoming",
+  "ready": "G:\\Comics\\Incoming\\_ready",
+  "min_age_minutes": 10,
+  "comictagger": "comictagger",
+  "komga_url": "http://localhost:25600",
+  "routes": [
+    {
+      "match": "hulk",
+      "collection": "Hulk Collection",
+      "lists": [
+        "! Marvel Universe - Suggested Reading Order"
+      ],
+      "anchors": [
+        {
+          "match": "masterworks",
+          "anchor": "1962-05"
+        },
+        {
+          "match": "loeb",
+          "anchor": "2008-01"
+        },
+        {
+          "match": "immortal hulk",
+          "anchor": "2018-06"
+        }
+      ]
+    },
+    {
+      "match": "thunderbolts",
+      "collection": "Thunderbolts Collection",
+      "anchor": "1997-07",
+      "lists": [
+        "! Marvel Universe - Suggested Reading Order"
+      ]
+    },
+    {
+      "match": "batman",
+      "collection": "Batman Collection"
+    },
+    {
+      "match": "daredevil",
+      "collection": "Daredevil"
+    },
+    {
+      "match": "elektra",
+      "collection": "Elektra Collection"
+    },
+    {
+      "match": "ghost rider",
+      "collection": "Ghost Rider Collection"
+    },
+    {
+      "match": "silver surfer",
+      "collection": "Silver Surfer Collection"
+    },
+    {
+      "match": "venom",
+      "collection": "Venom Collection"
+    },
+    {
+      "match": "x-men",
+      "collection": "X-Men Collection"
+    },
+    {
+      "match": "superman",
+      "collection": "Superman Collection"
+    },
+    {
+      "match": "spider-man",
+      "collection": "The Amazing Spider-Man",
+      "library": "Spider Man Collection"
+    }
+  ],
+  "aliases": {
+    "Incredible Hulk Masterworks": "Marvel Masterworks: The Incredible Hulk"
+  },
+  "publishers": {
+    "Marvel": "Marvel Universe",
+    "DC Comics": "DC Universe"
+  },
+  "include_file": "G:\\Comics\\readlist_include.txt"
+}
