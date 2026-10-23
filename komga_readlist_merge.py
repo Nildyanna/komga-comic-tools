@@ -59,25 +59,44 @@ def main():
     def folder_of(book):
         return os.path.basename(os.path.dirname(book["url"].replace("\\", "/")))
 
-    existing = api(f"/readlists/{args.readlist_id}/books?unpaged=true")["content"]
-    library = api(f"/books?library_id={args.library_id}&unpaged=true")["content"]
-    by_id = {b["id"]: b for b in library}
-    order = [b["id"] for b in existing if b["id"] in by_id]
+    def fetch_all(path):
+        """Every item of a paged Komga endpoint (the server caps the page size, so walk totalPages)."""
+        out, page = [], 0
+        while True:
+            d = api(f"{path}{'&' if '?' in path else '?'}size=500&page={page}")
+            out += d["content"]
+            page += 1
+            if page >= d.get("totalPages", 1):
+                return out
+
+    existing = fetch_all(f"/readlists/{args.readlist_id}/books")
+    library = fetch_all(f"/books?library_id={args.library_id}")
+    # A read list usually spans several libraries: keep EVERY existing entry (in its order), not just the ones in --library-id.
+    by_id = {b["id"]: b for b in existing}
+    by_id.update({b["id"]: b for b in library})
+    order = [b["id"] for b in existing]
     in_list = set(order)
+    # Dates that are far from their neighbours (an omnibus printed in 2017 sitting among 1976 issues) must not drag the
+    # running position forward, so such outliers count as undated.
+    months = [month_index(by_id[bid]["metadata"]["releaseDate"]) if by_id[bid]["metadata"].get("releaseDate") else None for bid in order]
     dated = {}
     last = 0
-    for bid in order:
-        d = by_id[bid]["metadata"].get("releaseDate")
-        last = month_index(d) if d else last
+    for i, bid in enumerate(order):
+        near = sorted(m for m in months[max(0, i - 6):i + 7] if m is not None)
+        outlier = months[i] is not None and near and abs(months[i] - near[len(near) // 2]) > 36
+        if months[i] is not None and not outlier:
+            last = months[i]
         dated[bid] = last
     new_books = [b for b in library if b["id"] not in in_list]
-    print(f"existing list: {len(order)} | library: {len(library)} | new to place: {len(new_books)}")
+    print(f"existing list: {len(order)} ({len([b for b in library if b['id'] in in_list])} in this library) | library: {len(library)} | new to place: {len(new_books)}")
+    if not order:
+        sys.exit("The read list came back empty; refusing to continue (applying would replace it with only the new books).")
 
     anchors = defaultdict(list)
-    for bid in order:
+    for i, bid in enumerate(order):
         b = by_id[bid]
         d, n = b["metadata"].get("releaseDate"), number_of(b)
-        if d and n is not None:
+        if d and n is not None and abs(months[i] - dated[bid]) <= 36:
             anchors[folder_of(b)].append((n, month_index(d)))
     for pts in anchors.values():
         pts.sort()
@@ -123,6 +142,7 @@ def main():
     final += [b["id"] for b in sorted(trailing, key=lambda b: (folder_of(b), number_of(b) or 0, b["name"]))]
     assert len(final) == len(set(final)) == len(order) + len(new_books)
     assert [x for x in final if x in in_list] == order, "existing relative order changed"
+    assert in_list <= set(final) and len(final) >= len(order), "an existing entry would be lost"
 
     with open(args.preview, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)

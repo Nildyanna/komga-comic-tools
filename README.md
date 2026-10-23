@@ -36,9 +36,10 @@ python komga_readlist_merge.py --library-id LIB_ID --readlist-id LIST_ID
 python komga_readlist_merge.py --library-id LIB_ID --readlist-id LIST_ID --apply --cbl merged.cbl
 ```
 
-The read-list merge keeps the existing entries in the same relative order, keeps the list's id and name, and places
+The read-list merge keeps every existing entry (including ones from other libraries) in the same relative order, keeps the list's id and name, and places
 each new book after the last entry with an earlier-or-equal cover month (interpolated from books of the same folder
-that already have dates). Books it cannot date go in a block at the end. Read the preview CSV before using `--apply`.
+that already have dates). Books it cannot date go in a block at the end. Read the preview CSV before using `--apply`. Dates far from their neighbours (an omnibus among 1970s issues) are ignored when
+working out where a book goes, and the tool refuses to apply anything that would drop an existing entry. Tests: `python test_readlist_merge.py`.
 
 ## Lessons baked in
 * Filename conventions matter: use `<Series> #NNN.cbz` (3-digit issue numbers) inside one folder per series/volume.
