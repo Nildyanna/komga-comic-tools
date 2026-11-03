@@ -1,7 +1,13 @@
 {
-  "incoming": "G:\\Comics\\Incoming",
-  "ready": "G:\\Comics\\Incoming\\_ready",
+  "incoming": "D:\\ComicStaging",
+  "ready": "D:\\ComicStaging\\_ready",
   "min_age_minutes": 10,
+  "library_roots": {
+    "Fantastic Four Collection": "R:\\Fantastic Four Collection"
+  },
+  "cover_match_tolerances": {
+    "Fantastic Four Collection": 29
+  },
   "comictagger": "comictagger",
   "komga_url": "http://localhost:25600",
   "routes": [
@@ -30,6 +36,14 @@
       "match": "thunderbolts",
       "collection": "Thunderbolts Collection",
       "anchor": "1997-07",
+      "lists": [
+        "! Marvel Universe - Suggested Reading Order"
+      ]
+    },
+    {
+      "match": "fantastic four",
+      "collection": "Fantastic Four Collection",
+      "library": "Fantastic Four Collection",
       "lists": [
         "! Marvel Universe - Suggested Reading Order"
       ]
@@ -79,5 +93,16 @@
     "Marvel": "Marvel Universe",
     "DC Comics": "DC Universe"
   },
-  "include_file": "G:\\Comics\\readlist_include.txt"
+  "include_file": "C:\\Users\\paris\\ArmgddnUploader\\readlists\\readlist_include.txt",
+  "max_items_per_run": 500,
+  "prepare_time_budget_seconds": 600,
+  "comicvine_requests_per_hour": 160,
+  "comicvine_cache_db": "D:\\ComicStaging\\_state\\comicvine_cache.sqlite",
+  "held_retry_seconds": 604800,
+  "readlist_dir": "C:\\Users\\paris\\ArmgddnUploader\\readlists",
+  "content_order_anchors": "C:\\Users\\paris\\ArmgddnUploader\\readlists\\content_order_anchors.json",
+  "auto_create_routes": true,
+  "break_out_collected_editions": true,
+  "trade_list_fallback": true,
+  "ocr_python": "C:\\Python313\\python.exe"
 }

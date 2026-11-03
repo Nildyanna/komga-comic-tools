@@ -27,7 +27,7 @@ def _find(env_name, names, extra=()):
 UNRAR = _find("UNRAR_PATH", ["unrar", "UnRAR.exe"], [r"C:\Program Files\WinRAR\UnRAR.exe"])
 RAR = _find("RAR_PATH", ["rar", "Rar.exe"], [r"C:\Program Files\WinRAR\Rar.exe"])
 
-FIELDS = r"<(Series|Number|Year|Month|Volume|Count|Title)>([^<]*)<"
+FIELDS = r"<(Series|Number|Year|Month|Volume|Count|Title|Publisher|Format|Imprint)>([^<]*)<"
 
 
 def is_cbz(path):
@@ -52,13 +52,38 @@ def list_names(path):
 
 
 def read_raw_root_info(path):
-    """ComicInfo.xml from the archive ROOT only (that is the only place Komga reads it)."""
     path = str(path)
     if is_cbz(path):
-        z = zipfile.ZipFile(path)
-        names = [n for n in z.namelist() if n.lower() == "comicinfo.xml"]
-        return z.read(names[0]).decode("utf-8", "replace") if names else ""
-    return subprocess.run([UNRAR, "p", "-inul", path, "ComicInfo.xml"], capture_output=True).stdout.decode("utf-8", "replace")
+        try:
+            import zipfile
+            with zipfile.ZipFile(path, 'r') as z:
+                names = [n for n in z.namelist() if n.lower() == 'comicinfo.xml']
+                if names: return z.read(names[0]).decode('utf-8', 'replace')
+                nested = [n for n in z.namelist() if n.replace('\\', '/').lower().endswith('/comicinfo.xml')]
+                if not nested: return ''
+                content = z.read(nested[0])
+        except Exception: return ''
+        try:
+            with zipfile.ZipFile(path, 'a') as z:
+                if 'ComicInfo.xml' not in z.namelist(): z.writestr('ComicInfo.xml', content)
+        except Exception: pass
+        return content.decode('utf-8', 'replace')
+    return subprocess.run([UNRAR, 'p', '-inul', path, 'ComicInfo.xml'], capture_output=True).stdout.decode('utf-8', 'replace')
+
+
+def comicvine_issue_id(path):
+    """Return a valid Comic Vine issue ID from root ComicInfo.xml, or None."""
+    raw = read_raw_root_info(path)
+    patterns = (
+        r"comicvine\.gamespot\.com/[^<>\s\"']*/4000-(\d+)",
+        r"(?:Comic Vine )?(?:issue )?ID\s*[:#]?\s*4000-(\d+)",
+        r"Issue ID\s*[:#]?\s*(\d+)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, raw, re.I)
+        if match:
+            return int(match.group(1))
+    return None
 
 
 def read_tags(path):

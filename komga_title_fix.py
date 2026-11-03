@@ -95,7 +95,8 @@ def comicvine_key(settings_path=None):
                  os.path.expanduser("~/.local/share/comictagger/settings.json")]:
         if path and os.path.exists(path):
             try:
-                return json.load(open(path, encoding="utf-8"))["Source comicvine"]["comicvine_key"]
+                with open(path, encoding="utf-8") as settings_file:
+                    return json.load(settings_file)["Source comicvine"]["comicvine_key"]
             except (KeyError, ValueError, OSError):
                 continue
     return None

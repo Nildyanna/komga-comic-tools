@@ -60,8 +60,30 @@ working out where a book goes, and the tool refuses to apply anything that would
 * Filename conventions matter: use `<Series> #NNN.cbz` (3-digit issue numbers) inside one folder per series/volume.
 * Give ComicTagger the series name **and** a year hint close to the issue's cover year; the runner follows the last real
   cover date so the hint stays accurate, then verifies the result and restores basic tags if the series is wrong.
-* Comic Vine allows roughly 200 requests per hour per key. Pausing ~25 s between files was reliable; 10 s was not.
-  A personal API key (free) gives you your own quota.
+* Event-pack numbers may be reading-order positions, not comic issue numbers. Prefer consensus hints from internal page
+  filenames while preserving a publication year from the outer filename, constrain ambiguous series matches with the configured
+  Comic Vine story-arc ID, and use exact Incoming-relative `issue_overrides` only for files whose scans have no usable title/number.
+  Never treat the outer pack ordinal as an issue number.
+* Routes can declare a `library_roots` entry. After a verified issue is uploaded, the Komga stage creates that destination
+  library on demand if it does not already exist; it does not create empty libraries during intake.
+* The incoming pipeline keeps a persistent SQLite cache and a rolling per-key request ledger. Its default budget is 160
+  Comic Vine calls per hour, leaving headroom under the service's approximate 200-request limit; tune it with
+  `comicvine_requests_per_hour` only when the key's other usage is understood.
+* Routes are created automatically for a series nothing matches yet (`auto_create_routes`, Marvel/DC and other configured
+  publishers only): see `auto_create_route`.
+* Collected editions (trades, omnibuses, "Volume N" books) are filed in their library like any comic and then broken out
+  (`breakout.py`): Comic Vine's description says what the book collects; issues already in Komga need nothing; for the rest the book is
+  OCR'd (`ocr_python` must point at an interpreter with `rapidocr_onnxruntime`, Pillow and numpy) and split ONLY when every issue's
+  own title page is found in order with plausible lengths. Those singles are tagged and flow through the normal pipeline, so they land
+  in the single-issue reading lists by cover date. A book that cannot be verified is never guessed: its missing issues go to
+  `_state/acquisition_wanted.json`, and a numbered "Vol. N" book stands in the lists at its first issue's month
+  (`trade_list_fallback`) until the singles arrive. `hold_collected_editions: true` restores the old hold-for-review behaviour and
+  `break_out_collected_editions: false` turns the split off.
+* Preparation uses a 600-second time budget with a 500-file safety ceiling. Unchanged held files are skipped until their
+  file, routing/matching policy, relevant code, or weekly retry window changes.
+* Cover exceptions in `Incoming\_state\approved_covers.txt` should be visually checked against the selected Comic Vine issue.
+  Prefer exact Incoming-relative paths; basename entries remain supported for existing approvals.
+  `cover_match_tolerances` can set a route-specific dHash limit for a verified scan set; the default remains 14.
 * Always take a backup copy of the library first.
 
 ## License
